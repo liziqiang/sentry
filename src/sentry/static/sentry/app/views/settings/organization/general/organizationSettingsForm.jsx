@@ -29,20 +29,6 @@ const NewOrganizationSettingsForm = createReactClass({
   render() {
     let {initialData, orgId, onSave, access} = this.props;
 
-    //Only for adding the Flag to 2FA Enforcement.
-    if (this.getFeatures().has('require-2fa')) {
-      let security_panel = organizationSettingsFields.find(
-        panel => panel.title == 'Security & Privacy'
-      );
-      if (!security_panel.fields.find(field => field.name == 'require2FA'))
-        security_panel.fields.unshift({
-          name: 'require2FA',
-          type: 'boolean',
-          label: 'Require Two-Factor Authentication',
-          help: 'Require two-factor authentication for all members.',
-        });
-    }
-
     return (
       <Form
         apiMethod="PUT"
@@ -67,6 +53,7 @@ const NewOrganizationSettingsForm = createReactClass({
       >
         <Box>
           <JsonForm
+            features={this.getFeatures()}
             access={access}
             location={this.props.location}
             forms={organizationSettingsFields}
