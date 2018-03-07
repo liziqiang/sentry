@@ -62,6 +62,7 @@ class DjangoSearchBackendTest(TestCase):
             last_seen=datetime(2013, 7, 14, 3, 8, 24, 880386),
             first_seen=datetime(2013, 7, 14, 3, 8, 24, 880386),
         )
+
         self.event2 = self.create_event(
             event_id='b' * 32,
             group=self.group2,
@@ -283,6 +284,19 @@ class DjangoSearchBackendTest(TestCase):
         assert results[0] == self.group2
 
     def test_assigned_to(self):
+        results = self.backend.query(self.project1, assigned_to=self.user)
+        assert len(results) == 1
+        assert results[0] == self.group2
+
+        # test team assignee
+        ga = GroupAssignee.objects.get(
+            user=self.user,
+            group=self.group2,
+            project=self.group2.project,
+        )
+        ga.update(team=self.team, user=None)
+        assert GroupAssignee.objects.get(id=ga.id).user is None
+
         results = self.backend.query(self.project1, assigned_to=self.user)
         assert len(results) == 1
         assert results[0] == self.group2
