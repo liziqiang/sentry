@@ -17,8 +17,6 @@ import MenuItem from '../menuItem';
 import SeenInfo from './seenInfo';
 import {t} from '../../locale';
 
-// TODO(dcramer): this should listen to EnvironmentStore
-// changes
 const GroupReleaseStats = createReactClass({
   displayName: 'GroupReleaseStats',
 
@@ -117,34 +115,47 @@ const GroupReleaseStats = createReactClass({
     });
   },
 
+  // Grab data for all environments and set on state, following the format of /issues/group/environments/{envname}
   fetchAllEnvironmentsData() {
     let group = this.props.group;
 
-    // Grab data for all environments and set on state, following the format of /issues/group/environments/{envname}
-    let data = {
-      environment: {stats: group.stats},
-    };
+    let stats = group.stats['24h'];
+    let until = stats[stats.length - 1][0] + 1;
 
-    if (group.firstRelease) {
-      data.firstRelease = {
-        release: group.firstRelease,
-        environment: getPath(group, 'firstRelease.lastDeploy.environment'),
-      };
-    }
+    this.api.request(`/issues/${group.id}/`, {
+      query: {
+        until,
+      },
+      success: groupData => {
+        const data = {environment: {stats: groupData.stats}};
 
-    if (group.lastRelease) {
-      data.lastRelease = {
-        release: group.lastRelease,
-        environment: getPath(group, 'lastDeploy.lastDeploy.environment'),
-      };
-    }
+        if (groupData.firstRelease) {
+          data.firstRelease = {
+            release: group.firstRelease,
+            environment: getPath(group, 'firstRelease.lastDeploy.environment'),
+          };
+        }
 
-    data.firstSeen = group.firstSeen;
-    data.lastSeen = group.lastSeen;
+        if (groupData.lastRelease) {
+          data.lastRelease = {
+            release: group.lastRelease,
+            environment: getPath(groupData, 'lastDeploy.lastDeploy.environment'),
+          };
+        }
 
-    this.setState({
-      data,
-      loading: false,
+        this.setState({
+          data,
+          loading: false,
+          error: false,
+        });
+      },
+      error: () => {
+        this.setState({
+          data: null,
+          loading: false,
+          error: true,
+        });
+      },
     });
   },
 
@@ -153,7 +164,7 @@ const GroupReleaseStats = createReactClass({
     let {environment, data, hasEnvironmentsFeature} = this.state;
 
     let envList = this.state.envList || [];
-
+    console.log(environment);
     let envName = environment ? environment.displayName : t('All Environments');
 
     let projectId = this.getProject().slug;
